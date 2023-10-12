@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  // previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  user_id        String    @id @default(uuid())
+  fullname       String    @db.VarChar(100)
+  username       String    @db.VarChar(50)
+  email          String
+  hashedPassword String
+  avater         String?
+  gender         Gender    @default(NONE)
+  role           Role      @default(USER)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  user_activities user_activities[]
+  reset_passwords reset_passwords[]
+  providers       providers[]
+  consumers       consumers[]
+
+  @@index([username, email])
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NONE
+}
+
+enum Role {
+  ADMIN
+  SUBADMIN
+  USER
+}
+
+model user_activities {
+  user_activity_id String   @id @default(uuid())
+  users            users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id          String
+  action           String
+  user_agent       String?
+  user_ip          String?
+  frames           Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model reset_passwords {
+  reset_password_id String   @id @default(uuid())
+  users             users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id           String
+  last_pwd_hashed   String
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model providers {
+  provider_id      String    @id @default(uuid())
+  users            users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id          String
+  provider_name    String    @db.VarChar(100)
+  provider_key     String    @unique @db.VarChar(30)
+  provider_origins String?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  consumers consumers[]
+
+  @@index([provider_key])
+}
+
+// model provider_subs {
+//   provider_sub_id   String    @id @default(uuid())
+//   providers         providers @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade)
+//   provider_id       String
+//   subscription_name String    @db.VarChar(50)
+//   createdAt         DateTime  @default(now())
+//   deletedAt         DateTime?
+
+//   provider_plans provider_plans[]
+// }
+
+// model provider_plans {
+//   provider_plan_id String        @id @default(uuid())
+//   providers        providers     @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade)
+//   provider_id      String
+//   provider_subs    provider_subs @relation(fields: [provider_sub_id], references: [provider_sub_id], onDelete: Cascade)
+//   provider_sub_id  String
+//   description      String        @db.VarChar(150)
+//   short_code       String        @db.VarChar(10)
+//   createdAt        DateTime      @default(now())
+//   deletedAt        DateTime?
+// }
+
+model consumers {
+  consumer_id String    @id @default(uuid())
+  users       users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id     String
+  providers   providers @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade)
+  provider_id String
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+}

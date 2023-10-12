@@ -1,0 +1,150 @@
+import { NextFunction, Request, Response } from 'express'
+import { hasProvider } from 'src/repos/provider'
+import { checkSubAuthority, fetchAllSubscriptionsByProvider, newSub, patchSub } from 'src/repos/subscription'
+import { ErrorType } from 'src/types/custom'
+import BaseController from './base.controller'
+
+class SubscriptionController extends BaseController {
+  constructor() {
+    super()
+    this.configureRoutes()
+  }
+
+  private getSubscriptions = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user
+      const { providerId } = req.params
+      // console.log('providerId :', providerId)
+      const hasOwner = await hasProvider(userId, providerId)
+      // console.log('hasOwner :', hasOwner)
+      if (!hasOwner) return next()
+      const providers = await fetchAllSubscriptionsByProvider(providerId)
+      res.json(providers)
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  /**
+   * Subscription oparetions
+   */
+
+  private createSubscription = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // const user_id = req.user
+      const { provider_id, subscription_name } = req.body
+
+      /**
+       * Validation
+       */
+      const errors: ErrorType = {}
+      if (!provider_id) {
+        errors.provider_id = 'ProviderId is required!'
+      }
+      if (!subscription_name) {
+        errors.subscription_name = 'Subscription name is required!'
+      }
+      if (Object.keys(errors).length) {
+        res.status(400).json(errors)
+        return
+      }
+      /**
+       * Validation End
+       */
+
+      const subscription = await newSub({ provider_id, subscription_name })
+      res.json({ ...subscription, subscription_name })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  private updateSubscription = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user
+      const { providerId } = req.params
+      const { sub_id, subscription_name } = req.body
+      /**
+       * validation
+       */
+      if (!providerId || !sub_id || !subscription_name) {
+        res.status(400).send({
+          message: 'All fields are required!'
+        })
+        return
+      }
+      if (subscription_name.length < 3) {
+        res.status(400).send({
+          subscription_name: 'Subscription name should be more then 3 cherecters!'
+        })
+        return
+      }
+      const check = await checkSubAuthority(providerId, sub_id, userId)
+      if (!check) {
+        res.status(400).send({
+          message: 'Subscription not found!'
+        })
+        return
+      }
+      const update = await patchSub(subscription_name, sub_id)
+      res.json({
+        ...update,
+        sub_id
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  /**
+   * Subscription Plan oparetions
+   */
+
+  private createPlan = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { provider_id, sub_id, description, short_code } = req.body
+      /**
+       * Validation
+       */
+      const errors: ErrorType = {}
+      // 1 # Requirements
+      if (!provider_id) errors.provider_id = 'ProviderId is required!'
+      if (!sub_id) errors.sub_id = 'SubId is required!'
+      if (!description) errors.description = 'Description is required!'
+      if (!short_code) errors.short_code = 'Short code is required!'
+      // 2 # Should be
+      if (!errors?.short_code && (short_code.length < 3 || short_code.length > 10))
+        errors.short_code = 'Short code should be 3 to 10 cherecters!'
+      if (!errors?.description && description.length > 150)
+        errors.description = 'Description should be under 150 cherecters!'
+      // 3 # Identity
+
+      if (Object.keys(errors).length) {
+        res.status(400).json(errors)
+        return
+      }
+      /**
+       * Validation End
+       */
+      res.send('OK')
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  /**
+   * configure router
+   */
+  configureRoutes() {
+    // Subscription routes
+    this.router.post('/v1/subscriptions', this.isAuth, this.createSubscription)
+    this.router.get('/v1/subscriptions/:providerId', this.isAuth, this.getSubscriptions)
+    this.router.patch('/v1/subscriptions/:providerId', this.isAuth, this.updateSubscription)
+    // Plan routes
+    this.router.post('/v1/subscriptions/plan', this.isAuth, this.createPlan)
+
+    // this._showRoutes()
+  }
+}
+
+export default new SubscriptionController()

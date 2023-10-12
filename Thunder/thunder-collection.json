@@ -1,0 +1,524 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "Auth Rest Client",
+  "dateExported": "2023-10-12T00:06:31.288Z",
+  "version": "1.1",
+  "folders": [
+    {
+      "_id": "320a814f-6d78-4834-9823-16c7e010e21f",
+      "name": "Auth",
+      "containerId": "9ba7a195-0f58-4888-b28a-6d8edc67d1db",
+      "created": "2023-10-06T01:02:01.098Z",
+      "sortNum": 10000
+    },
+    {
+      "_id": "cf6bd6c9-9512-4ef2-b228-2cc23a39fbd7",
+      "name": "Providers",
+      "containerId": "",
+      "created": "2023-10-03T17:04:43.619Z",
+      "sortNum": 27500
+    },
+    {
+      "_id": "36356ce7-1710-49ae-83de-e596954f789c",
+      "name": "Auth",
+      "containerId": "",
+      "created": "2023-10-03T17:02:25.677Z",
+      "sortNum": 41250
+    },
+    {
+      "_id": "b3c3e016-ff35-43e1-9b65-e423b4bdbd3c",
+      "name": "User",
+      "containerId": "",
+      "created": "2023-10-03T17:00:23.612Z",
+      "sortNum": 48125
+    },
+    {
+      "_id": "9ba7a195-0f58-4888-b28a-6d8edc67d1db",
+      "name": "Client",
+      "containerId": "",
+      "created": "2023-10-10T15:08:57.155Z",
+      "sortNum": 65000
+    }
+  ],
+  "requests": [
+    {
+      "_id": "3be8bec1-40ab-4edd-8704-4522e440a08e",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "36356ce7-1710-49ae-83de-e596954f789c",
+      "name": "Create User",
+      "url": "/auth/signup",
+      "method": "POST",
+      "sortNum": 10000,
+      "created": "2023-10-03T17:00:23.613Z",
+      "modified": "2023-10-11T13:44:32.844Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"fullname\":\"{{#name}}\",\n  \"username\":\"{{#name}}_{{#number}}\",\n  \"email\":\"{{#email}}\",\n  \"password\":\"password\"\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "set-env-var",
+          "custom": "json.token",
+          "action": "setto",
+          "value": "{{access}}"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "cookie._token",
+          "action": "setto",
+          "value": "{{refresh}}"
+        }
+      ]
+    },
+    {
+      "_id": "fffe017b-e948-4eba-872b-9b7e2b734988",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "320a814f-6d78-4834-9823-16c7e010e21f",
+      "name": "Create User",
+      "url": "/client/auth/signup",
+      "method": "POST",
+      "sortNum": 10000,
+      "created": "2023-10-06T01:02:01.098Z",
+      "modified": "2023-10-11T13:48:50.922Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"fullname\":\"{{#name}}\",\n  \"username\":\"{{#name}}_{{#number}}\",\n  \"email\":\"{{#email}}\",\n  \"password\":\"password\"\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "set-env-var",
+          "custom": "json.token",
+          "action": "setto",
+          "value": "{{access}}"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "cookie._token",
+          "action": "setto",
+          "value": "{{refresh}}"
+        }
+      ]
+    },
+    {
+      "_id": "3604a199-1c04-44f1-ab2b-adb5d0bd0eb9",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "",
+      "name": "Get Jwk",
+      "url": "/auth/jwk",
+      "method": "GET",
+      "sortNum": 10000,
+      "created": "2023-10-09T02:02:25.931Z",
+      "modified": "2023-10-09T23:15:25.404Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "tests": []
+    },
+    {
+      "_id": "f165b2dd-91d6-4885-a712-81c2bbf06ffe",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "36356ce7-1710-49ae-83de-e596954f789c",
+      "name": "Login",
+      "url": "/auth/signin",
+      "method": "POST",
+      "sortNum": 20000,
+      "created": "2023-10-03T17:00:23.612Z",
+      "modified": "2023-10-11T23:16:39.490Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"username\":\"Botsford_554795\",\n  \"password\":\"password\"\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "set-env-var",
+          "custom": "cookie._token",
+          "action": "setto",
+          "value": "{{refresh}}"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "json.token",
+          "action": "setto",
+          "value": "{{access}}"
+        }
+      ],
+      "preReq": {
+        "options": {
+          "clearCookies": true
+        }
+      }
+    },
+    {
+      "_id": "1e7d4e91-5e3b-4c91-b2b6-56935d1839b2",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "320a814f-6d78-4834-9823-16c7e010e21f",
+      "name": "Login",
+      "url": "/client/auth/signin",
+      "method": "POST",
+      "sortNum": 20000,
+      "created": "2023-10-06T01:02:01.099Z",
+      "modified": "2023-10-11T13:51:08.109Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"username\":\"Boyle_380789\",\n  \"password\":\"password\"\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "set-env-var",
+          "custom": "json.token",
+          "action": "setto",
+          "value": "{{access}}"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "cookie._token",
+          "action": "setto",
+          "value": "{{refresh}}"
+        }
+      ]
+    },
+    {
+      "_id": "8ddbacb2-f0c3-4781-8310-8c64980c2e76",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "",
+      "name": "Update Jwk",
+      "url": "/auth/jwk",
+      "method": "PATCH",
+      "sortNum": 20000,
+      "created": "2023-10-09T02:54:43.162Z",
+      "modified": "2023-10-09T23:16:11.703Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{token}}"
+      },
+      "tests": []
+    },
+    {
+      "_id": "5dfec92d-7d08-4db0-a6d3-ccf001e395cf",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "36356ce7-1710-49ae-83de-e596954f789c",
+      "name": "Refresh Token",
+      "url": "/auth/refresh",
+      "method": "POST",
+      "sortNum": 25000,
+      "created": "2023-10-09T00:43:27.613Z",
+      "modified": "2023-10-09T23:15:07.036Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"token\":\"{{refresh}}\"\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "set-env-var",
+          "custom": "json.token",
+          "action": "setto",
+          "value": "{{access}}"
+        },
+        {
+          "type": "set-env-var",
+          "custom": "json.refresh",
+          "action": "setto",
+          "value": "{{refresh}}"
+        }
+      ]
+    },
+    {
+      "_id": "a5a9976e-ff60-48f5-89c5-b277df7d79c1",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "36356ce7-1710-49ae-83de-e596954f789c",
+      "name": "Update User",
+      "url": "/auth/email",
+      "method": "PATCH",
+      "sortNum": 26250,
+      "created": "2023-10-08T22:00:31.536Z",
+      "modified": "2023-10-09T23:16:01.527Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"new_email\":\"raseldeveloper2@gmail.com\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{access}}"
+      },
+      "tests": []
+    },
+    {
+      "_id": "b394e27c-91a3-42f3-921e-ac17fb8bfdc0",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "b3c3e016-ff35-43e1-9b65-e423b4bdbd3c",
+      "name": "Profile",
+      "url": "/users",
+      "method": "GET",
+      "sortNum": 30000,
+      "created": "2023-10-03T17:00:23.614Z",
+      "modified": "2023-10-09T23:17:09.364Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{access}}"
+      },
+      "tests": []
+    },
+    {
+      "_id": "a92ad876-d985-4f70-bd3e-24f5909263b9",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "cf6bd6c9-9512-4ef2-b228-2cc23a39fbd7",
+      "name": "Lists",
+      "url": "/providers",
+      "method": "GET",
+      "sortNum": 30000,
+      "created": "2023-10-03T17:04:43.619Z",
+      "modified": "2023-10-09T23:17:57.826Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{access}}"
+      },
+      "tests": []
+    },
+    {
+      "_id": "80ac8ac5-be16-43aa-a29f-b725f96da0c8",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "cf6bd6c9-9512-4ef2-b228-2cc23a39fbd7",
+      "name": "Show Api Key",
+      "url": "/providers/ec1f6d77-0a60-4e11-b735-8019e82447bb/key",
+      "method": "GET",
+      "sortNum": 35000,
+      "created": "2023-10-11T23:59:56.317Z",
+      "modified": "2023-10-12T00:01:39.442Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{access}}"
+      },
+      "tests": []
+    },
+    {
+      "_id": "877cae0a-bc6a-459b-8471-9afa0654d8f0",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "36356ce7-1710-49ae-83de-e596954f789c",
+      "name": "Forget Password",
+      "url": "/auth/forget-password",
+      "method": "POST",
+      "sortNum": 36250,
+      "created": "2023-10-09T23:22:31.624Z",
+      "modified": "2023-10-10T00:32:11.954Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"user\":\"Clark_296069\"\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "set-env-var",
+          "custom": "json.token",
+          "action": "setto",
+          "value": "{{forgot_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "6f9964c5-c3ea-4bbf-ae71-7994806229fb",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "cf6bd6c9-9512-4ef2-b228-2cc23a39fbd7",
+      "name": "Create Provider",
+      "url": "/providers",
+      "method": "POST",
+      "sortNum": 40000,
+      "created": "2023-10-03T17:05:26.651Z",
+      "modified": "2023-10-11T23:40:41.053Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"organize_name\": \"My First App\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{access}}"
+      },
+      "tests": []
+    },
+    {
+      "_id": "b8040ac9-c3bb-43ef-95d9-48350e5af0f4",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "b3c3e016-ff35-43e1-9b65-e423b4bdbd3c",
+      "name": "Activity",
+      "url": "/users/activities",
+      "method": "GET",
+      "sortNum": 40000,
+      "created": "2023-10-10T23:08:45.479Z",
+      "modified": "2023-10-10T23:09:56.703Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{access}}"
+      },
+      "tests": []
+    },
+    {
+      "_id": "410ca19b-cc5e-43d7-a633-e188990431ae",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "36356ce7-1710-49ae-83de-e596954f789c",
+      "name": "Reset Password",
+      "url": "/auth/reset-password?token={{forgot_token}}",
+      "method": "POST",
+      "sortNum": 46250,
+      "created": "2023-10-10T00:32:33.049Z",
+      "modified": "2023-10-10T00:34:22.924Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{forgot_token}}"
+        }
+      ],
+      "params": [
+        {
+          "name": "token",
+          "value": "{{forgot_token}}",
+          "isPath": false
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"new_password\":\"password\",\n  \"confirm_password\":\"password\"\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "_id": "53caea17-8b98-4913-8721-3d342b3d0ab7",
+      "colId": "926e69bd-0518-4d1e-abb5-18a02b1e7cdb",
+      "containerId": "cf6bd6c9-9512-4ef2-b228-2cc23a39fbd7",
+      "name": "Update Provider",
+      "url": "/providers/ec1f6d77-0a60-4e11-b735-8019e82447bb",
+      "method": "PATCH",
+      "sortNum": 50000,
+      "created": "2023-10-11T23:31:52.758Z",
+      "modified": "2023-10-11T23:41:51.676Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"origins\": \"https://localhost,http://localhost,\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "bearer",
+        "bearer": "{{access}}"
+      },
+      "tests": []
+    }
+  ],
+  "settings": {
+    "options": {
+      "baseUrl": "{{base_uri}}"
+    },
+    "envId": "fe3fa920-0862-4a6b-9ea4-6703826996ac"
+  }
+}
