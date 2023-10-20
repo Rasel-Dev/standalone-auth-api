@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response, Router } from 'express'
 import { verifyAuthToken } from 'src/libs/jwt'
+import { verifyApiKey } from 'src/repos/provider'
 import { userExists } from 'src/repos/user'
 
 // export default class BaseController {
@@ -132,21 +133,29 @@ export default abstract class BaseController {
     next()
   }
 
-  protected _ensurePermissions = (scopes: string[]) => async (req: Request, res: Response, next: NextFunction) => {
+  protected ensureKey = (scopes: string[]) => async (req: Request, res: Response, next: NextFunction) => {
     console.log('scopes :', scopes)
-    const passedKey = req.headers['x-api-key'] as string
-    if (passedKey.length < 8) {
+    const apiKey = req.headers['x-api-key'] as string
+    if (apiKey.length < 8) {
       res.status(401).send({ message: 'Invalid key', code: 401 })
       return
     }
     try {
-      console.log('passedKey :', passedKey)
+      console.log('apiKey :', apiKey)
+      const verifyKey = await verifyApiKey(apiKey)
+      if (!verifyKey) {
+        res.status(401).send({ message: 'Invalid key', code: 401 })
+        return
+      }
+
+      res.locals.provider_id = verifyKey.provider_id
+
       // do stuff here
-      return next()
+      // like count per api hit or something else
+      next()
     } catch (err) {
       console.log(err)
       res.status(401).send({ message: 'Invalid key', code: 401 })
-      return
     }
   }
 }

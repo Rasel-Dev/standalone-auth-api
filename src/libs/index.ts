@@ -1,11 +1,7 @@
 import { genSalt, hash } from 'bcrypt'
-import { NextFunction, Request, RequestHandler, Response } from 'express'
 import { verify } from 'jsonwebtoken'
 import { JWTType } from 'src/types/custom'
 import { v4 as uuidv4 } from 'uuid'
-
-export const useAsync = (fn: RequestHandler) => (req: Request, res: Response, next: NextFunction) =>
-  Promise.resolve(fn(req, res, next)).catch(next)
 
 export const pwdReg = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,}$/
 export const emailReg =

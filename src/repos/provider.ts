@@ -18,8 +18,8 @@ export const fetchAllProvidersByUser = (user_id: string) =>
     },
     select: {
       provider_id: true,
-      provider_name: true,
-      provider_origins: true
+      organize_name: true,
+      organize_domains: true
     }
   })
 
@@ -34,13 +34,13 @@ export const hasProvider = (provider_id: string, user_id: string) =>
     }
   })
 
-export const patchProviderOrigins = (provider_origins: string, provider_id: string) =>
+export const patchProviderOrigins = (organize_domains: string, provider_id: string) =>
   prismadb.providers.update({
     where: {
       provider_id
     },
     data: {
-      provider_origins
+      organize_domains
     },
     select: {
       provider_id: true
@@ -48,4 +48,15 @@ export const patchProviderOrigins = (provider_origins: string, provider_id: stri
   })
 
 export const fetchProviderKey = (provider_id: string) =>
-  prismadb.providers.findUnique({ where: { provider_id }, select: { provider_key: true } })
+  prismadb.providers.findUnique({ where: { provider_id }, select: { api_key: true } })
+
+export const verifyApiKey = (api_key: string) =>
+  prismadb.providers.findUnique({
+    where: {
+      api_key,
+      isActive: true
+    },
+    select: {
+      provider_id: true
+    }
+  })

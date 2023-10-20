@@ -3,3 +3,4 @@ build
 uploads
 prisma/migrations
 .env
+logs

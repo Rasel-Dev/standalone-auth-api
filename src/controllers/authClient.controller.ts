@@ -1,9 +1,8 @@
 import { compare, hash } from 'bcrypt'
 import { NextFunction, Request, Response } from 'express'
-import { readFileSync } from 'fs'
 import { emailReg, verifyToken } from 'src/libs'
 import { setAuthCookie } from 'src/libs/cookie'
-import { genAuthToken, jwkRotation, verifyAuthToken } from 'src/libs/jwt'
+import { genAuthToken, verifyAuthToken } from 'src/libs/jwt'
 import { getLastActivity, patchActivity } from 'src/repos/activity'
 import {
   checkUniqueEmail,
@@ -20,11 +19,10 @@ import BaseController from './base.controller'
 
 import { Role } from '@prisma/client'
 import { sign } from 'jsonwebtoken'
-import jose from 'node-jose'
 import { expireResetToken, saveResetPassword, verifyResetToken } from 'src/repos/resetPassword'
 import { APP_ENV } from '..'
 
-class AuthController extends BaseController {
+class AuthClientController extends BaseController {
   constructor() {
     super()
     this.configureRoutes()
@@ -327,45 +325,20 @@ class AuthController extends BaseController {
     }
   }
 
-  private getJwk = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const ks = readFileSync('keys.json')
-      const keyStore = await jose.JWK.asKeyStore(ks.toString())
-
-      res.send(keyStore.toJSON())
-    } catch (error) {
-      next(error)
-    }
-  }
-
-  private updateJwk = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const jwk = await jwkRotation()
-      res.send(jwk)
-    } catch (error) {
-      next(error)
-    }
-  }
-
   /**
    * configure router
    */
   public configureRoutes() {
-    // Json web key
-    this.router.get('/jwk', this.getJwk)
-    this.router.patch('/jwk', this.updateJwk)
-
     // Auth
-    this.router.post('/signup', this.register)
-    this.router.post('/signin', this.login)
-    this.router.post('/forget-password', this.forget)
-    this.router.post('/reset-password', this.resetPassword)
-    this.router.post('/refresh', this.refreshToken)
-    this.router.patch('/:section', this.isAuth, this.updateUser)
+    this.router.post('/signup', this.ensureKey, this.register)
+    this.router.post('/signin', this.ensureKey, this.login)
+    this.router.post('/forget-password', this.ensureKey, this.forget)
+    this.router.post('/reset-password', this.ensureKey, this.resetPassword)
+    this.router.post('/refresh', this.ensureKey, this.refreshToken)
+    this.router.patch('/:section', this.ensureKey, this.isAuth, this.updateUser)
 
-    // this._showRoutes()
+    // return this.router
+    // this.showRoutes()
   }
 }
-
-// export default AuthController
-export default new AuthController()
+export default new AuthClientController()

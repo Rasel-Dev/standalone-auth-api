@@ -41,71 +41,53 @@ enum Gender {
 
 enum Role {
   ADMIN
-  SUBADMIN
+  PROVIDER
   USER
 }
 
-model user_activities {
-  user_activity_id String   @id @default(uuid())
-  users            users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  user_id          String
-  action           String
-  user_agent       String?
-  user_ip          String?
-  frames           Int      @default(1)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-}
-
-model reset_passwords {
-  reset_password_id String   @id @default(uuid())
-  users             users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  user_id           String
-  last_pwd_hashed   String
-  active            Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+model subscriptions {
+  subscription_id String      @id @default(uuid())
+  title           String      @db.VarChar(100)
+  description     String
+  planLimit       Int
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  providers       providers[]
 }
 
 model providers {
-  provider_id      String    @id @default(uuid())
-  users            users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  provider_id      String        @id @default(uuid())
+  users            users         @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   user_id          String
-  provider_name    String    @db.VarChar(100)
-  provider_key     String    @unique @db.VarChar(30)
-  provider_origins String?
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  subscriptions    subscriptions @relation(fields: [subscription_id], references: [subscription_id])
+  subscription_id  String
+  organize_name    String        @db.VarChar(100)
+  api_key          String        @unique @db.VarChar(30)
+  organize_domains String?
+  isActive         Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   deletedAt        DateTime?
 
-  consumers consumers[]
+  consumers       consumers[]
+  user_activities user_activities[]
+  reset_passwords reset_passwords[]
+  transections    transections[]
 
-  @@index([provider_key])
+  @@index([api_key])
 }
 
-// model provider_subs {
-//   provider_sub_id   String    @id @default(uuid())
-//   providers         providers @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade)
-//   provider_id       String
-//   subscription_name String    @db.VarChar(50)
-//   createdAt         DateTime  @default(now())
-//   deletedAt         DateTime?
-
-//   provider_plans provider_plans[]
-// }
-
-// model provider_plans {
-//   provider_plan_id String        @id @default(uuid())
-//   providers        providers     @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade)
-//   provider_id      String
-//   provider_subs    provider_subs @relation(fields: [provider_sub_id], references: [provider_sub_id], onDelete: Cascade)
-//   provider_sub_id  String
-//   description      String        @db.VarChar(150)
-//   short_code       String        @db.VarChar(10)
-//   createdAt        DateTime      @default(now())
-//   deletedAt        DateTime?
-// }
+model transections {
+  transection_id String    @id @default(uuid())
+  providers      providers @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade)
+  provider_id    String
+  title          String
+  description    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+}
 
 model consumers {
   consumer_id String    @id @default(uuid())
@@ -117,4 +99,30 @@ model consumers {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
+}
+
+model user_activities {
+  user_activity_id String     @id @default(uuid())
+  users            users      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id          String
+  providers        providers? @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade)
+  provider_id      String?
+  action           String
+  user_agent       String?
+  user_ip          String?
+  frames           Int        @default(1)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+}
+
+model reset_passwords {
+  reset_password_id String     @id @default(uuid())
+  users             users      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id           String
+  providers         providers? @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade)
+  provider_id       String?
+  last_pwd_hashed   String
+  active            Boolean    @default(true)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 }

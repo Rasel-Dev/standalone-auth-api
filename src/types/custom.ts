@@ -6,3 +6,4 @@ export type JWTType = {
 }
 export type UserAuthReq = string
 export type ErrorType = Record<string, string | boolean>
+export type EmptyType = Record<string, string | boolean>

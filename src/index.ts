@@ -1,10 +1,5 @@
-// import 'reflect-metadata'
 import * as dotenv from 'dotenv'
 import 'src/process'
-// import { RSAKey } from './libs/rsa'
-// import { writeFileSync } from 'fs'
-// import jose from 'node-jose'
-// import { join } from 'path'
 import ExpressServer from './server'
 dotenv.config()
 
@@ -71,3 +66,5 @@ ExpressServer.start()
 // keyStore.generate('RSA', 2048, { alg: 'RS256', use: 'sig' }).then(() => {
 //   writeFileSync(join('./public/.well-known/keys.json'), JSON.stringify(keyStore.toJSON(true), null, '  '))
 // })
+
+// sendForMail()

@@ -29,6 +29,8 @@ export const sysLog = createLogger({
   defaultMeta: {
     service: 'system-service'
   },
+  // exceptionHandlers: [new transports.File({ filename: 'logs/exceptions.log' })],
+  // rejectionHandlers: [new transports.File({ filename: 'logs/rejections.log' })],
   transports: [new transports.Console({}), new transports.File({ filename: 'logs/server.log', level: 'error' })]
   // process.env?.NODE_ENV === 'development'
   //   ? new transports.Console({})

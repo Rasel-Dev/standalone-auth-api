@@ -13,3 +13,7 @@
 {"level":"error","message":"/v1/auth/signin-|-Error: All not OK","meta":"/v1/auth/signin","service":"system-service","timestamp":"2023-10-10T22:03:15.688Z"}
 {"level":"error","message":"/v1/auth/signin-|-Error: All not OK","meta":"/v1/auth/signin","service":"system-service","timestamp":"2023-10-10T22:03:27.633Z"}
 {"level":"error","message":"Error: All not OK","meta":"/v1/auth/signin","service":"system-service","timestamp":"2023-10-10T22:05:06.264Z"}
+{"level":"error","message":"NotFoundError: No users found","meta":"/v1/auth/signin","service":"system-service","timestamp":"2023-10-15T15:47:29.490Z"}
+{"level":"error","message":"PrismaClientKnownRequestError: \nInvalid `prisma.subscriptions.update()` invocation:\n\n\nAn operation failed because it depends on one or more records that were required but not found. Record to update not found.","meta":"/v1/subscriptions/ec1f6d77-0a60-4e11-b735-8019e82447bb","service":"system-service","timestamp":"2023-10-20T00:33:25.070Z"}
+{"level":"error","message":"SyntaxError: Expected double-quoted property name in JSON at position 113","meta":"/v1/subscriptions/68b884ec-8024-4ef6-b080-b29c2fd2aab8","service":"system-service","timestamp":"2023-10-20T00:35:43.427Z"}
+{"level":"error","message":"SyntaxError: Expected double-quoted property name in JSON at position 113","meta":"/v1/subscriptions/68b884ec-8024-4ef6-b080-b29c2fd2aab8","service":"system-service","timestamp":"2023-10-20T00:36:27.815Z"}

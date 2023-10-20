@@ -1,7 +1,6 @@
 import compression from 'compression'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import debug from 'debug'
 import express, { NextFunction, Request, Response } from 'express'
 import useragent from 'express-useragent'
 import { readFileSync } from 'fs'
@@ -12,12 +11,14 @@ import { Server as HttpServer, createServer } from 'https'
 import path, { join } from 'path'
 import favicon from 'serve-favicon'
 import authController from './controllers/auth.controller'
+import authClientController from './controllers/authClient.controller'
 import providerController from './controllers/provider.controller'
+import subscriptionController from './controllers/subscription.controller'
 import userController from './controllers/user.controller'
 import corsOptions, { authorityCors } from './libs/cors'
 import { sysLog } from './libs/logger'
 
-export const debugLog: debug.IDebugger = debug('app')
+// export const debugLog: debug.IDebugger = debug('app')
 
 class ExpressServer {
   express: express.Application
@@ -60,12 +61,32 @@ class ExpressServer {
     })
 
     this.express.use(cors(authorityCors))
-
     this.express.use('/v1/auth/', authController.router)
     this.express.use('/v1/users/', userController.router)
     this.express.use('/v1/providers/', providerController.router)
+    this.express.use('/v1/subscriptions/', subscriptionController.router)
 
-    // this.express.use('/v1/client/auth/', authClientController.router)
+    this.express.use('/v1/client/auth/', authClientController.router)
+
+    let routePaths = []
+    const stacks = this.express._router?.stack
+    // console.log('stacks :', stacks[stacks.length - 1]?.handle?.stack)
+    console.log('-----------------------------------')
+    stacks
+      ?.filter((s) => s.name === 'router')
+      .forEach((stack) => {
+        const innerStacks = stack?.handle.stack
+        if (stack && innerStacks) {
+          innerStacks.forEach((inrStack) => {
+            const { methods, path } = inrStack.route
+            const method = Object.keys(methods)
+            // console.log('methods, path :', stack.regexp, methods, path)
+            console.log('http:', method[0].toUpperCase(), path)
+            routePaths.push(methods, path)
+          })
+          console.log('-----------------------------------')
+        }
+      })
   }
 
   private _errorRoutes(): void {
@@ -101,8 +122,10 @@ class ExpressServer {
 
   public start(): void {
     this.server.listen(this.express.get('port'), () => {
-      // console.log(`Server listening on http://localhost:${this.express.get('port')}`)
-      sysLog.info(`Server listening on http://localhost:${this.express.get('port')}`)
+      if (process.env.NODE_ENV !== 'production') {
+        // console.clear()
+        sysLog.info(`Server listening on http://localhost:${this.express.get('port')}`)
+      }
     })
   }
 }
