@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
+import { genHateoas } from 'src/libs'
 import { fetchActivities } from 'src/repos/activity'
-import { getCurrentUser } from 'src/repos/user'
+import userRepo from 'src/repos/user'
 import BaseController from './base.controller'
 
 class UserController extends BaseController {
@@ -12,8 +13,9 @@ class UserController extends BaseController {
   private profile = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user
-      const profile = await getCurrentUser(userId)
-      res.json({ id: userId, ...profile })
+      const profile = await userRepo.getProfile(userId)
+      const _links = genHateoas({ activity: 'activities' }, { req })
+      res.json({ id: userId, ...profile, _links })
     } catch (error) {
       next(error)
     }
@@ -32,10 +34,10 @@ class UserController extends BaseController {
   /**
    * configure router
    */
-  configureRoutes() {
+  public configureRoutes() {
     // auth user
-    this.router.get('/', this.isAuth, this.profile)
-    this.router.get('/activities', this.isAuth, this.getActivities)
+    this.router.get('/', this.isAuth(['provider', 'user']), this.profile)
+    this.router.get('/activities', this.isAuth(['provider', 'user']), this.getActivities)
 
     // this._showRoutes()
   }

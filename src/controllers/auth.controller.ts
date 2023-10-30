@@ -5,23 +5,14 @@ import { emailReg, verifyToken } from 'src/libs'
 import { setAuthCookie } from 'src/libs/cookie'
 import { genAuthToken, jwkRotation, verifyAuthToken } from 'src/libs/jwt'
 import { getLastActivity, patchActivity } from 'src/repos/activity'
-import {
-  checkUniqueEmail,
-  checkUniqueUsername,
-  getCurrentUser,
-  getForgeter,
-  getUserByUsername,
-  newUser,
-  patchEmail,
-  patchPassword
-} from 'src/repos/user'
+import userRepo from 'src/repos/user'
 import { ErrorType } from 'src/types/custom'
 import BaseController from './base.controller'
 
 import { Role } from '@prisma/client'
 import { sign } from 'jsonwebtoken'
 import jose from 'node-jose'
-import { expireResetToken, saveResetPassword, verifyResetToken } from 'src/repos/resetPassword'
+import resetRepo from 'src/repos/resetPassword'
 import { APP_ENV } from '..'
 
 class AuthController extends BaseController {
@@ -49,11 +40,11 @@ class AuthController extends BaseController {
 
       // db check & it's called 3rd layer validation
       if (!errors.username) {
-        const checkUsername = await checkUniqueUsername(username)
+        const checkUsername = await userRepo.hasUnique(username, 'username')
         if (checkUsername) errors.username = 'Username already taken!'
       }
       if (!errors.email) {
-        const checkEmail = await checkUniqueEmail(email)
+        const checkEmail = await userRepo.hasUnique(email, 'email')
         if (checkEmail) errors.email = 'Email address already taken!'
       }
 
@@ -64,7 +55,7 @@ class AuthController extends BaseController {
       // pass 'user' object to repository/service
       const hashedPassword = await hash(password, 12)
       // create new record and return with created "id"
-      const user = await newUser(
+      const user = await userRepo.save(
         {
           fullname,
           username: username?.toLowerCase(),
@@ -101,7 +92,7 @@ class AuthController extends BaseController {
         return
       }
 
-      const user = await getUserByUsername(username)
+      const user = await userRepo.getIdentify(username)
       if (!user) {
         res.status(400).json({ message: 'Incorrect login credentials!' })
         return
@@ -112,7 +103,7 @@ class AuthController extends BaseController {
         return
       }
 
-      const { role, ...profile } = await getCurrentUser(user.user_id)
+      const { role, ...profile } = await userRepo.getProfile(user.user_id)
 
       const action = `login`
       const [{ accessToken, refreshToken }, lastActivity] = await Promise.all([
@@ -152,7 +143,7 @@ class AuthController extends BaseController {
 
     try {
       if (user && !errors.user) {
-        forgotUser = await getForgeter(user)
+        forgotUser = await userRepo.getIdentify(user, true)
         if (!forgotUser) errors.user = 'Username or Email address is not really accosiated with this program!'
       }
 
@@ -164,7 +155,7 @@ class AuthController extends BaseController {
       const lastActivity = await getLastActivity(forgotUser.user_id, action)
       if (!lastActivity || lastActivity.frames <= 3) {
         const [resetTokenId] = await Promise.all([
-          saveResetPassword(forgotUser.user_id, forgotUser.hashedPassword),
+          resetRepo.save(forgotUser.user_id, forgotUser.hashedPassword),
           patchActivity(forgotUser.user_id, action, req.useragent.source, req.ip, lastActivity?.user_activity_id)
         ])
         tokenId = resetTokenId.reset_password_id
@@ -209,15 +200,15 @@ class AuthController extends BaseController {
 
     try {
       const decoded = verifyToken(token)
-      await verifyResetToken(decoded?.jti)
+      await resetRepo.verify(decoded?.jti)
       const lastActivity = await getLastActivity(decoded.aud, action)
       if (!lastActivity || lastActivity.frames <= 3) {
         const [hashedPassword] = await Promise.all([
           hash(new_password, 12),
           patchActivity(decoded.aud, action, req.useragent.source, req.ip, lastActivity?.user_activity_id),
-          expireResetToken(decoded.jti)
+          resetRepo.expire(decoded.jti)
         ])
-        const patched = await patchPassword(hashedPassword, decoded.aud)
+        const patched = await userRepo.patch(hashedPassword, decoded.aud, 'hashedPwd')
         res.send(!!patched ? 'Password has been reset.' : 'Password not reset!')
       } else {
         res.status(422).send('You reached 3 time changes password within an hour! try next hour.')
@@ -228,7 +219,7 @@ class AuthController extends BaseController {
     }
   }
 
-  private refreshToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  private refreshToken = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     const { _token } = req.cookies
     const { token } = req.body
     const refToken: string = token || _token
@@ -243,11 +234,16 @@ class AuthController extends BaseController {
         res.status(403).send('Invalid Token!')
         return
       }
+      const exist = await userRepo.isExists(decode.aud)
+      if (!exist) {
+        res.status(403).send('Invalid Token!')
+        return
+      }
       const action = `refreshToken`
       const [{ accessToken, refreshToken }, lastActivity] = await Promise.all([
         // signAccessToken(aud),
         // signRefreshToken(aud),
-        genAuthToken(decode.aud, [], 'https://yourdomain.com'),
+        genAuthToken(decode.aud, decode.scopes, 'https://yourdomain.com'),
         getLastActivity(decode.aud, action)
       ])
       setAuthCookie(refreshToken, res)
@@ -259,7 +255,8 @@ class AuthController extends BaseController {
       // apply new tokens
       res.status(200).json({ token: accessToken, refresh: refreshToken })
     } catch (error) {
-      next(error)
+      // next(error)
+      res.status(403).send('Invalid Token!')
     }
   }
 
@@ -287,7 +284,7 @@ class AuthController extends BaseController {
             return
           }
           const hashedPassword = await hash(new_password, 12)
-          const update = await patchPassword(hashedPassword, userId)
+          const update = await userRepo.patch(hashedPassword, userId, 'hashedPwd')
           res.status(!!update ? 200 : 400).send({
             message: !!update ? 'Password changed.' : 'Password not changed!'
           })
@@ -304,7 +301,18 @@ class AuthController extends BaseController {
             res.status(400).json(errors)
             return
           }
-          const update = await patchEmail(new_email, userId)
+
+          if (!errors.new_email) {
+            const checkEmail = await userRepo.hasUnique(new_email, 'email')
+            if (checkEmail) errors.new_email = 'Email address already taken!'
+          }
+          //
+          if (Object.keys(errors).length) {
+            res.status(400).json(errors)
+            return
+          }
+
+          const update = await userRepo.patch(new_email, userId, 'email')
           res.status(!!update ? 200 : 400).send({
             message: !!update ? 'Email address changed.' : 'Email address not changed!'
           })
@@ -329,7 +337,7 @@ class AuthController extends BaseController {
 
   private getJwk = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const ks = readFileSync('keys.json')
+      const ks = readFileSync('public/.well-known/keys.json')
       const keyStore = await jose.JWK.asKeyStore(ks.toString())
 
       res.send(keyStore.toJSON())
@@ -352,8 +360,8 @@ class AuthController extends BaseController {
    */
   public configureRoutes() {
     // Json web key
-    this.router.get('/jwk', this.getJwk)
-    this.router.patch('/jwk', this.updateJwk)
+    this.router.get('/jwk', this.isAuth(['admin']), this.getJwk)
+    this.router.patch('/jwk', this.isAuth(['admin']), this.updateJwk)
 
     // Auth
     this.router.post('/signup', this.register)
@@ -361,7 +369,7 @@ class AuthController extends BaseController {
     this.router.post('/forget-password', this.forget)
     this.router.post('/reset-password', this.resetPassword)
     this.router.post('/refresh', this.refreshToken)
-    this.router.patch('/:section', this.isAuth, this.updateUser)
+    this.router.patch('/:section', this.isAuth(['provider']), this.updateUser)
 
     // this._showRoutes()
   }

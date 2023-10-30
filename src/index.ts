@@ -68,3 +68,45 @@ ExpressServer.start()
 // })
 
 // sendForMail()
+
+// ActivityEvent.listen('info', (data) => {
+//   console.log('info :', data)
+// })
+// ActivityEvent.listen('warn', (data) => {
+//   console.log('warning :', data)
+// })
+// ActivityEvent.listen('error', (data) => {
+//   console.log('error :', data)
+// })
+// const base64 =
+//   'eyJmdWxsbmFtZSI6IkJvZGUiLCJ1c2VybmFtZSI6ImdhcmNpYV84Njc5OTQiLCJlbWFpbCI6InJhc2VsZGV2ZWxvcGVyMkBnbWFpbC5jb20iLCJhdmF0ZXIiOm51bGwsImNyZWF0ZWRBdCI6IjIwMjMtMTAtMjVUMTA6MDE6MDIuMTE5WiIsInJvbGUiOiJVU0VSIn0='
+
+// // console.log('base64 :', base64.split(''))
+// const unique: Record<string, string | number[]>[] = []
+
+// for (let index = 0; index < base64.length; index++) {
+//   const element = base64[index]
+//   if (index === 0) {
+//     unique.push({ field: element, p: [index] })
+//   } else {
+//     // check cherecter exists
+//     const fidx = unique.findIndex((c) => c?.field === element)
+//     if (fidx !== -1) {
+//       const oldPos = unique[fidx]?.p as number[]
+//       unique[fidx].p = [...oldPos, index]
+//     } else {
+//       unique.push({ field: element, p: [index] })
+//     }
+//   }
+//   // console.log('element :', element)
+// }
+// const shortBase64 = unique.map((k) => k?.field).join('')
+// console.log('unique :', unique)
+// console.log('shortBase64 :', shortBase64)
+// console.log('base64 :', base64)
+
+// const part = base64.length / 4
+// console.log('base64 :', base64.substring(0, part))
+
+// const decode = Buffer.from(base64, 'base64').toString('utf-8')
+// console.log('decode :', decode)

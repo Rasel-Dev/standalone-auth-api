@@ -1,26 +1,25 @@
+import { Role } from '@prisma/client'
 import { compare, hash } from 'bcrypt'
 import { NextFunction, Request, Response } from 'express'
+import { sign } from 'jsonwebtoken'
 import { emailReg, verifyToken } from 'src/libs'
-import { setAuthCookie } from 'src/libs/cookie'
 import { genAuthToken, verifyAuthToken } from 'src/libs/jwt'
 import { getLastActivity, patchActivity } from 'src/repos/activity'
 import {
   checkUniqueEmail,
   checkUniqueUsername,
+  clientExists,
   getCurrentUser,
   getForgeter,
   getUserByUsername,
   newUser,
   patchEmail,
   patchPassword
-} from 'src/repos/user'
+} from 'src/repos/client'
+import resetRepo from 'src/repos/resetPassword'
 import { ErrorType } from 'src/types/custom'
-import BaseController from './base.controller'
-
-import { Role } from '@prisma/client'
-import { sign } from 'jsonwebtoken'
-import { expireResetToken, saveResetPassword, verifyResetToken } from 'src/repos/resetPassword'
 import { APP_ENV } from '..'
+import BaseController from './base.controller'
 
 class AuthClientController extends BaseController {
   constructor() {
@@ -28,7 +27,8 @@ class AuthClientController extends BaseController {
     this.configureRoutes()
   }
 
-  private register = async (req: Request, res: Response, next: NextFunction) => {
+  private register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const provider_id = res.locals?.provider_id
     try {
       // TODO: Like a create random record
       const errors: ErrorType = {}
@@ -47,11 +47,11 @@ class AuthClientController extends BaseController {
 
       // db check & it's called 3rd layer validation
       if (!errors.username) {
-        const checkUsername = await checkUniqueUsername(username)
+        const checkUsername = await checkUniqueUsername(username, provider_id)
         if (checkUsername) errors.username = 'Username already taken!'
       }
       if (!errors.email) {
-        const checkEmail = await checkUniqueEmail(email)
+        const checkEmail = await checkUniqueEmail(email, provider_id)
         if (checkEmail) errors.email = 'Email address already taken!'
       }
 
@@ -68,8 +68,9 @@ class AuthClientController extends BaseController {
           username: username?.toLowerCase(),
           email: email?.toLowerCase(),
           hashedPassword,
-          role: Role.PROVIDER
+          role: Role.USER
         },
+        provider_id,
         req.useragent.source
       )
 
@@ -82,15 +83,16 @@ class AuthClientController extends BaseController {
       //   expiresIn: '24h'
       // })
       // set token to response cookie
-      setAuthCookie(refreshToken, res)
+      // setAuthCookie(refreshToken, res)
       // response the final data
-      res.json({ id: user.user_id, fullname, username, email, token: accessToken })
+      res.json({ id: user.user_id, fullname, username, email, jwt: { accessToken, refreshToken } })
     } catch (error: any) {
       next(error)
     }
   }
 
-  private login = async (req: Request, res: Response, next: NextFunction) => {
+  private login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const provider_id = res.locals.provider_id
     try {
       const { username, password } = req.body
       //validation
@@ -99,7 +101,7 @@ class AuthClientController extends BaseController {
         return
       }
 
-      const user = await getUserByUsername(username)
+      const user = await getUserByUsername(username, provider_id)
       if (!user) {
         res.status(400).json({ message: 'Incorrect login credentials!' })
         return
@@ -110,12 +112,10 @@ class AuthClientController extends BaseController {
         return
       }
 
-      const { role, ...profile } = await getCurrentUser(user.user_id)
+      const { role, ...profile } = await getCurrentUser(user.user_id, provider_id)
 
       const action = `login`
       const [{ accessToken, refreshToken }, lastActivity] = await Promise.all([
-        // signAccessToken(user?.user_id, [], 'www.yourdomain.com'),
-        // signRefreshToken(user?.user_id, [], 'www.yourdomain.com'),
         genAuthToken(user?.user_id, [role], 'https://yourdomain.com'),
         getLastActivity(user.user_id, action)
       ])
@@ -123,15 +123,21 @@ class AuthClientController extends BaseController {
        * Set Activity
        */
       // const lastActivity = await getLastActivity(user.user_id, action)
-      await patchActivity(user.user_id, action, req.useragent.source, req.ip, lastActivity?.user_activity_id)
+      await patchActivity(
+        user.user_id,
+        action,
+        req.useragent.source,
+        req.ip,
+        lastActivity?.user_activity_id,
+        provider_id
+      )
 
       // const token = sign({ aud: user?.user_id, iat: Math.floor(Date.now() / 1000) - 30 }, process.env?.JWT_SECRET, {
       //   expiresIn: '24h'
       // })
       // set token to response cookie
-      setAuthCookie(refreshToken, res)
-
-      res.json({ id: user?.user_id, ...profile, token: accessToken })
+      // setAuthCookie(refreshToken, res)
+      res.json({ id: user?.user_id, ...profile, jwt: { accessToken, refreshToken } })
     } catch (error) {
       next(error)
     }
@@ -140,6 +146,7 @@ class AuthClientController extends BaseController {
   private forget = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const errors: ErrorType = {}
     const { user } = req.body
+    const provider_id = res.locals.provider_id
     const action = `forgotPwd`
     let forgotUser: {
       email: string
@@ -150,7 +157,7 @@ class AuthClientController extends BaseController {
 
     try {
       if (user && !errors.user) {
-        forgotUser = await getForgeter(user)
+        forgotUser = await getForgeter(user, provider_id)
         if (!forgotUser) errors.user = 'Username or Email address is not really accosiated with this program!'
       }
 
@@ -159,11 +166,18 @@ class AuthClientController extends BaseController {
         return
       }
       let tokenId: string
-      const lastActivity = await getLastActivity(forgotUser.user_id, action)
+      const lastActivity = await getLastActivity(forgotUser.user_id, action, provider_id)
       if (!lastActivity || lastActivity.frames <= 3) {
         const [resetTokenId] = await Promise.all([
-          saveResetPassword(forgotUser.user_id, forgotUser.hashedPassword),
-          patchActivity(forgotUser.user_id, action, req.useragent.source, req.ip, lastActivity?.user_activity_id)
+          resetRepo.save(forgotUser.user_id, forgotUser.hashedPassword, provider_id),
+          patchActivity(
+            forgotUser.user_id,
+            action,
+            req.useragent.source,
+            req.ip,
+            lastActivity?.user_activity_id,
+            provider_id
+          )
         ])
         tokenId = resetTokenId.reset_password_id
       } else {
@@ -183,14 +197,15 @@ class AuthClientController extends BaseController {
     }
   }
 
-  private resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  private resetPassword = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     const errors: ErrorType = {}
     const token = (req.body?.token || req.query?.token || req.headers['authorization']) as string
     const { new_password, confirm_password } = req.body
+    const provider_id = res.locals.provider_id
     const action = `resetPwd`
 
     if (!token) {
-      next() // it should return "404 not found!"
+      res.status(400).json({ message: 'Token is required!' })
       return
     }
 
@@ -207,13 +222,13 @@ class AuthClientController extends BaseController {
 
     try {
       const decoded = verifyToken(token)
-      await verifyResetToken(decoded?.jti)
-      const lastActivity = await getLastActivity(decoded.aud, action)
+      await resetRepo.verify(decoded?.jti)
+      const lastActivity = await getLastActivity(decoded.aud, action, provider_id)
       if (!lastActivity || lastActivity.frames <= 3) {
         const [hashedPassword] = await Promise.all([
           hash(new_password, 12),
-          patchActivity(decoded.aud, action, req.useragent.source, req.ip, lastActivity?.user_activity_id),
-          expireResetToken(decoded.jti)
+          patchActivity(decoded.aud, action, req.useragent.source, req.ip, lastActivity?.user_activity_id, provider_id),
+          resetRepo.expire(decoded.jti)
         ])
         const patched = await patchPassword(hashedPassword, decoded.aud)
         res.send(!!patched ? 'Password has been reset.' : 'Password not reset!')
@@ -226,14 +241,17 @@ class AuthClientController extends BaseController {
     }
   }
 
-  private refreshToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { _token } = req.cookies
+  private refreshToken = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     const { token } = req.body
-    const refToken: string = token || _token
+    const provider_id = res.locals.provider_id
+    let refToken: string = token
     // console.log('refToken :', refToken)
     if (!refToken) {
       res.status(401).json({ message: 'Unauthorized' })
       return
+    }
+    if (refToken.toLowerCase().startsWith('bearer')) {
+      refToken = refToken.slice('bearer'.length).trim()
     }
     try {
       const decode = await verifyAuthToken(refToken)
@@ -241,23 +259,62 @@ class AuthClientController extends BaseController {
         res.status(403).send('Invalid Token!')
         return
       }
+      // console.log('decode.aud, provider_id :', decode.aud, provider_id)
+      const exists = await clientExists(decode.aud, provider_id)
+
+      if (!exists) {
+        res.status(401).send('Invalid Token!')
+        return
+      }
+
       const action = `refreshToken`
       const [{ accessToken, refreshToken }, lastActivity] = await Promise.all([
-        // signAccessToken(aud),
-        // signRefreshToken(aud),
-        genAuthToken(decode.aud, [], 'https://yourdomain.com'),
-        getLastActivity(decode.aud, action)
+        genAuthToken(decode.aud, decode.scopes, 'https://yourdomain.com'),
+        getLastActivity(decode.aud, action, provider_id)
       ])
-      setAuthCookie(refreshToken, res)
+      // setAuthCookie(refreshToken, res)
       /**
        * Set Activity
        */
       // const lastActivity = await getLastActivity(aud, action)
-      await patchActivity(decode.aud, action, req.useragent.source, req.ip, lastActivity?.user_activity_id)
+      await patchActivity(decode.aud, action, req.useragent.source, req.ip, lastActivity?.user_activity_id, provider_id)
       // apply new tokens
-      res.status(200).json({ token: accessToken, refresh: refreshToken })
+      res.status(200).json({ jwt: { accessToken, refreshToken } })
     } catch (error) {
-      next(error)
+      // next(error)
+      res.status(403).send('Invalid Token!')
+    }
+  }
+
+  private verifyPublicAccessToken = async (req: Request, res: Response): Promise<void> => {
+    let token = (req.query?.token || req.headers['authorization'] || req.headers['x-access-token']) as string
+
+    if (!token) {
+      res.status(403).send('Unauthorized!')
+      return
+    }
+    if (token.toLowerCase().startsWith('bearer')) {
+      token = token.slice('bearer'.length).trim()
+    }
+    // console.log('token :', token)
+    try {
+      // const decoded = verifyToken(token)
+      const decoded = await verifyAuthToken(token)
+      if (!decoded) {
+        res.status(403).send('Invalid Token!')
+        return
+      }
+      // const decoded = await verifyAccessToken(token)
+      const exists = await clientExists(decoded.aud, res.locals.provider_id)
+
+      if (!exists) {
+        res.status(401).send('Invalid Token!')
+        return
+      }
+      res.send('Authenticated.')
+    } catch (err) {
+      // console.log('verify ERROR :\n', err)
+      res.status(401).send('Invalid Token!')
     }
   }
 
@@ -266,6 +323,7 @@ class AuthClientController extends BaseController {
       const errors: ErrorType = {}
       const userId = req.user
       const { section } = req.params
+      const provider_id = res.locals.provider_id
 
       switch (section) {
         case 'password': {
@@ -302,6 +360,17 @@ class AuthClientController extends BaseController {
             res.status(400).json(errors)
             return
           }
+
+          if (!errors.new_email) {
+            const checkEmail = await checkUniqueEmail(new_email, provider_id)
+            if (checkEmail) errors.new_email = 'Email address already taken!'
+          }
+          //
+          if (Object.keys(errors).length) {
+            res.status(400).json(errors)
+            return
+          }
+
           const update = await patchEmail(new_email, userId)
           res.status(!!update ? 200 : 400).send({
             message: !!update ? 'Email address changed.' : 'Email address not changed!'
@@ -317,9 +386,8 @@ class AuthClientController extends BaseController {
        * Set Activity
        */
       const action = `${section}Change`
-      const lastActive = await getLastActivity(userId, action)
-      await patchActivity(userId, action, req.useragent.source, req.ip, lastActive?.user_activity_id)
-      // await newActivity(userId, action, req.useragent.source)
+      const lastActive = await getLastActivity(userId, action, provider_id)
+      await patchActivity(userId, action, req.useragent.source, req.ip, lastActive?.user_activity_id, provider_id)
     } catch (error) {
       next(error)
     }
@@ -335,10 +403,12 @@ class AuthClientController extends BaseController {
     this.router.post('/forget-password', this.ensureKey, this.forget)
     this.router.post('/reset-password', this.ensureKey, this.resetPassword)
     this.router.post('/refresh', this.ensureKey, this.refreshToken)
-    this.router.patch('/:section', this.ensureKey, this.isAuth, this.updateUser)
+    this.router.get('/verify', this.ensureKey, this.verifyPublicAccessToken)
+    this.router.patch('/:section', this.ensureKey, this.isAuth(['user']), this.updateUser)
 
     // return this.router
     // this.showRoutes()
   }
 }
+
 export default new AuthClientController()

@@ -1,10 +1,12 @@
 import { dateTime } from 'src/libs/datetime'
 import prismadb from 'src/libs/prismadb'
+import { EmptyType } from 'src/types/custom'
 
-export const newActivity = (user_id: string, action: string, user_agent?: string) =>
+export const newActivity = (user_id: string, action: string, user_agent?: string, provider_id?: string) =>
   prismadb.user_activities.create({
     data: {
       user_id,
+      provider_id,
       action,
       user_agent
     },
@@ -18,7 +20,8 @@ export const patchActivity = (
   action: string,
   user_agent?: string,
   user_ip?: string,
-  user_activity_id?: string
+  user_activity_id?: string,
+  provider_id?: string
 ) => {
   const { now } = dateTime()
   return prismadb.user_activities.upsert({
@@ -33,6 +36,7 @@ export const patchActivity = (
     },
     create: {
       user_id,
+      provider_id,
       action,
       user_agent,
       user_ip,
@@ -45,14 +49,16 @@ export const patchActivity = (
   })
 }
 
-export const getLastActivity = (user_id: string, action: string) => {
+export const getLastActivity = (user_id: string, action: string, provider_id?: string) => {
   const { sub } = dateTime()
   const afterLastHour = sub({ hour: 1 })
+  const where: EmptyType = { user_id, action }
+
+  if (provider_id) where.provider_id = provider_id
 
   return prismadb.user_activities.findFirst({
     where: {
-      user_id,
-      action,
+      ...where,
       createdAt: {
         // new Date() creates date with current time and day and etc.
         gte: new Date(afterLastHour)

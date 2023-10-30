@@ -1,4 +1,5 @@
 import { genSalt, hash } from 'bcrypt'
+import { Application, Request } from 'express'
 import { verify } from 'jsonwebtoken'
 import { JWTType } from 'src/types/custom'
 import { v4 as uuidv4 } from 'uuid'
@@ -70,6 +71,40 @@ export const validOrigin = (origins: string = '') => {
     })
     .filter((o) => o)
   return { valid, invalid }
+}
+
+export const routeLogs = (express: Application) => {
+  // let routePaths = []
+  const stacks = express._router?.stack
+  // console.log('stacks :', stacks[stacks.length - 1]?.handle?.stack)
+  console.log('-----------------------------------')
+  stacks
+    ?.filter((s) => s.name === 'router')
+    .forEach((stack) => {
+      const innerStacks = stack?.handle.stack
+      if (stack && innerStacks) {
+        innerStacks.forEach((inrStack) => {
+          const { methods, path } = inrStack.route
+          const method = Object.keys(methods)
+          // console.log('methods, path :', stack.regexp, methods, path)
+          console.log('http:', method[0].toUpperCase(), path)
+          // routePaths.push(methods, path)
+        })
+        console.log('-----------------------------------')
+      }
+    })
+}
+
+export const genHateoas = (links: Record<string, string>, option: { req?: Request; customUrl?: string }) => {
+  const _links: Record<string, string>[] = []
+  const { req, customUrl } = option
+  const uri = !!req ? req.originalUrl : customUrl
+  const keys = Object.keys(links)
+  _links.push(
+    { rel: 'self', href: uri },
+    ...keys.map((k) => ({ rel: k, href: `${uri}${!!links[k] ? `/${links[k]}` : ``}` }))
+  )
+  return _links
 }
 
 // console.log('validOrigin :', validOrigin('https://localhost.live,http://localhost/,http://google.com.@'))

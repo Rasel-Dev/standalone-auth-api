@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response, Router } from 'express'
 import { verifyAuthToken } from 'src/libs/jwt'
+import { clientExists } from 'src/repos/client'
 import { verifyApiKey } from 'src/repos/provider'
-import { userExists } from 'src/repos/user'
+import userRepo from 'src/repos/user'
 
 // export default class BaseController {
 //   public router: Router
@@ -81,7 +82,6 @@ export default abstract class BaseController {
 
   constructor() {
     this.router = Router()
-    // this.configureRoutes()
   }
 
   abstract configureRoutes(): void
@@ -98,8 +98,8 @@ export default abstract class BaseController {
     console.table(routePaths, ['controller', 'method', 'path'])
   }
 
-  protected isAuth = async (req: Request, res: Response, next: NextFunction) => {
-    let token = req.body.token || req.query.token || req.headers['authorization'] || req.headers['x-access-token']
+  protected isAuth = (scopes: string[]) => async (req: Request, res: Response, next: NextFunction) => {
+    let token = req.body?.token || req.query?.token || req.headers['authorization'] || req.headers['x-access-token']
 
     if (!token) {
       res.status(403).send('Unauthorized!')
@@ -117,11 +117,29 @@ export default abstract class BaseController {
         return
       }
       // const decoded = await verifyAccessToken(token)
-      const exists = await userExists(decoded.aud)
+      // console.log('res.locals?.provider_id :', res.locals?.provider_id)
+      const exists = !!res.locals?.provider_id
+        ? await clientExists(decoded.aud, res.locals.provider_id)
+        : await userRepo.isExists(decoded.aud)
+
       if (!exists) {
         res.status(401).send('Invalid Token!')
         return
       }
+
+      /**
+       * Authorization scopes check
+       */
+      if (scopes?.length) {
+        const userScopes = decoded.scopes
+        const hasPrivillageScopes = scopes.filter((scope) => userScopes.includes(scope?.toUpperCase())).length || 0
+        // console.log('privillageScopes :', privillageScopes, userScopes, scopes)
+        if (!hasPrivillageScopes) {
+          res.status(401).send('Invalid Token!')
+          return
+        }
+      }
+
       req.user = decoded.aud
       // const userAgent = req.useragent
       // console.log('userAgent :', userAgent.source)
@@ -133,15 +151,14 @@ export default abstract class BaseController {
     next()
   }
 
-  protected ensureKey = (scopes: string[]) => async (req: Request, res: Response, next: NextFunction) => {
-    console.log('scopes :', scopes)
+  protected ensureKey = async (req: Request, res: Response, next: NextFunction) => {
+    // console.log('scopes :', scopes)
     const apiKey = req.headers['x-api-key'] as string
-    if (apiKey.length < 8) {
-      res.status(401).send({ message: 'Invalid key', code: 401 })
-      return
-    }
     try {
-      console.log('apiKey :', apiKey)
+      if (!apiKey || (apiKey && apiKey.length < 8)) {
+        res.status(401).send({ message: 'Invalid key', code: 401 })
+        return
+      }
       const verifyKey = await verifyApiKey(apiKey)
       if (!verifyKey) {
         res.status(401).send({ message: 'Invalid key', code: 401 })

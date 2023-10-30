@@ -21,7 +21,7 @@
       "import { NextFunction, Request, Response } from 'express'",
       "import BaseController from './base.controller'",
       "\n",
-      "class ${1:nameController} extends BaseController {",
+      "class ${1:name}Controller extends BaseController {",
       "  constructor() {",
       "    super()",
       "    this.configureRoutes()",
@@ -42,18 +42,19 @@
       "    // this._showRoutes()",
       "  }",
       "}",
-      "export default new ${1:nameController}()"
+      "export default new ${1:name}Controller()"
     ],
-    "description": "Controller"
+    "description": "Create controller class"
   },
   "Method": {
     "prefix": "method",
     "body": [
       "private ${1:controllerName} = async (req: Request, res: Response, next: NextFunction): Promise<void> => {",
+      "    const {} = req.params",
+      "    const {} = req.body",
+      "    const {} = req.query",
       "    try {",
-      "        const {} = req.params",
-      "        const {} = req.body",
-      "        const {} = req.query",
+      "        // Your async code gose here...",
       "        $2",
       "    } catch (error) {",
       "        next(error);",
@@ -79,6 +80,7 @@
       "      return",
       "    }",
       "    try {",
+      "        // Your async code gose here...",
       "        $2",
       "    } catch (error) {",
       "        next(error);",
@@ -86,5 +88,24 @@
       "};"
     ],
     "description": "Simple Controller Method"
+  },
+  "Repository": {
+    "prefix": "repo",
+    "body": [
+      "import { Prisma } from '@prisma/client'",
+      "import { DefaultArgs } from '@prisma/client/runtime/library'",
+      "\n",
+      "class ${1:Name}Repo {",
+      "  private ${2:repo}: Prisma.${2:repo}sDelegate<DefaultArgs>",
+      "  constructor() {",
+      "    this.${2:repo} = ${3:prismadb}.${2:repo}s",
+      "  }",
+      "  public gets() {",
+      "    return this.${2:repo}.findMany()",
+      "  }",
+      "}",
+      "export default new ${1:Name}Repo()"
+    ],
+    "description": "Creating repository class"
   }
 }
