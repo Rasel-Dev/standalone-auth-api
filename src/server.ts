@@ -3,12 +3,12 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express, { NextFunction, Request, Response } from 'express'
 import useragent from 'express-useragent'
-import { readFileSync } from 'fs'
 import helmet from 'helmet'
 import hpp from 'hpp'
 import { HttpTerminator, createHttpTerminator } from 'http-terminator'
-import { Server as HttpServer, createServer } from 'https'
-import path, { join } from 'path'
+// import { Server as HttpServer, createServer } from 'https'
+import { Server as HttpServer, createServer } from 'http'
+import path from 'path'
 import favicon from 'serve-favicon'
 import authController from './controllers/auth.controller'
 import authClientController from './controllers/authClient.controller'
@@ -25,12 +25,12 @@ class ExpressServer {
   httpTerminator: HttpTerminator
 
   constructor() {
-    const options = {
-      key: readFileSync(join('./cert/key.pem')),
-      cert: readFileSync(join('./cert/cert.pem'))
-    }
+    // const options = {
+    //   key: readFileSync(join('./cert/key.pem')),
+    //   cert: readFileSync(join('./cert/cert.pem'))
+    // }
     this.express = express()
-    this.server = createServer(options, this.express)
+    this.server = createServer(this.express)
     this.httpTerminator = createHttpTerminator({ server: this.server })
     this._configure()
     this._routes()
